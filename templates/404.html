@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}404 - Page Not Found | ySEal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <header>
+        <div class="logo-container">
+            <img src="{% static 'yseal.png' %}" alt="ySEal Logo" class="logo">
+        </div>
+        <h1>404</h1>
+        <p class="tagline">Page Not Found</p>
+        
+        <div class="cta-buttons">
+            <a href="{% url 'home' %}" class="btn btn-primary">Go Home</a>
+            <a href="{% url 'swagger-ui' %}" class="btn btn-secondary">API Documentation</a>
+        </div>
+    </header>
+    
+    <div class="cards" style="max-width: 600px; margin: 3rem auto;">
+        <div class="card" style="text-align: center;">
+            <div class="card-icon">🔍</div>
+            <h3>The page you're looking for doesn't exist</h3>
+            <p>It might have been moved, deleted, or you may have mistyped the URL.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

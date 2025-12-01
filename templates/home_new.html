@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero">
+    <div class="hero-content">
+        <div class="logo-container">
+            <img src="{% static 'yseal.png' %}" alt="ySEal Logo" class="hero-logo">
+        </div>
+        <h1>ySEal</h1>
+        <p class="tagline">Your Security Enhanced Architecture Library</p>
+        <p class="subtitle">Discover, share, and download SELinux policies for your infrastructure</p>
+        <div class="hero-actions">
+            <a href="/browse/" class="btn btn-primary">Browse Policies</a>
+            <a href="{% url 'api-ui-v1:namespace-list' %}" class="btn btn-secondary">Explore Namespaces</a>
+            <a href="{% url 'swagger-ui' %}" class="btn btn-outline">API Docs</a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ policy_count }}</div>
+            <div class="stat-label">SELinux Policies</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ namespace_count }}</div>
+            <div class="stat-label">Namespaces</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ download_count }}</div>
+            <div class="stat-label">Downloads</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ user_count }}</div>
+            <div class="stat-label">Contributors</div>
+        </div>
+    </div>
+
+    {% if recommendations.recs %}
+    <!-- Recommendations -->
+    <section class="section">
+        <h2>Recommended for you</h2>
+        <div class="recommendations">
+            {% for rec in recommendations.recs %}
+            <div class="recommendation-card">
+                <div class="recommendation-icon">💡</div>
+                <div class="recommendation-content">
+                    <h3>{{ rec.action.title }}</h3>
+                    <p>{{ rec.description }}</p>
+                    <a href="{{ rec.action.href }}" class="btn btn-link">Learn more →</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if featured_policies %}
+    <!-- Featured Policies -->
+    <section class="section">
+        <div class="section-header">
+            <h2>Featured Policies</h2>
+            <a href="/browse/" class="btn btn-link">View all →</a>
+        </div>
+        <div class="policy-grid">
+            {% for policy in featured_policies %}
+            <div class="policy-card">
+                <div class="policy-header">
+                    <h3 class="policy-title">{{ policy.namespace.name }}.{{ policy.name }}</h3>
+                    {% with latest_version=policy.versions.first %}
+                    {% if latest_version %}
+                    <span class="policy-version">v{{ latest_version.version }}</span>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                <p class="policy-description">{{ policy.description|truncatewords:20 }}</p>
+                <div class="policy-meta">
+                    <span class="policy-downloads">
+                        📥 {{ policy.download_logs.count }} downloads
+                    </span>
+                    <span class="policy-updated">
+                        Updated {{ policy.updated_at|timesince }} ago
+                    </span>
+                </div>
+                <div class="policy-tags">
+                    {% for tag in policy.tags.all|slice:":3" %}
+                    <span class="tag">{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Features -->
+    <section class="section">
+        <h2>Why ySEal?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Centralized Repository</h3>
+                <p>One place to find SELinux policies for applications, services, and security enhancements. Browse, search, and discover policies created by the community.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">⭐</div>
+                <h3>Community-Driven</h3>
+                <p>Vote and rate policies based on quality and effectiveness. Share your experience and help others find the best policies for their needs.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <h3>Version Control</h3>
+                <p>Track changes, manage versions, and roll back when needed. Every policy maintains a complete version history with changelogs.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🛠️</div>
+                <h3>CLI Tool</h3>
+                <p>Install policies with a simple command. Manage your SELinux policies efficiently from the command line, just like ansible-galaxy.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🚀</div>
+                <h3>Scalable Architecture</h3>
+                <p>Built with Django REST Framework, supports both SQLite and PostgreSQL. Designed to handle growth from small teams to enterprise deployments.</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Analytics & Insights</h3>
+                <p>Track downloads, ratings, and policy popularity. Understand which policies are trusted and widely used in the community.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Getting Started -->
+    <section class="section">
+        <h2>Getting Started</h2>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <h3>Install the CLI</h3>
+                <pre><code>pip install yseal-cli</code></pre>
+                <p>Install the ySEal command-line tool to browse and download policies.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <h3>Search for Policies</h3>
+                <pre><code>yseal search docker</code></pre>
+                <p>Search for SELinux policies by keyword, tag, or namespace.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <h3>Install Policies</h3>
+                <pre><code>yseal policy install namespace.policy</code></pre>
+                <p>Download and install SELinux policies to your system.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- System Information -->
+    <section class="section">
+        <div class="info-box">
+            <h3>System Information</h3>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Django Version:</span>
+                    <span class="info-value">{{ django_version }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Database:</span>
+                    <span class="info-value">{{ database_engine }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">API Version:</span>
+                    <span class="info-value">v1 (UI) & v3 (CLI)</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Quick Links:</span>
+                    <span class="info-value">
+                        <a href="{% url 'admin:index' %}">Admin</a> | 
+                        <a href="{% url 'swagger-ui' %}">API Docs</a> | 
+                        <a href="{% url 'schema' %}">Schema</a>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #f5f7fa;
+}
+
+.hero {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 100px 20px 80px;
+    text-align: center;
+}
+
+.hero-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.hero-logo {
+    width: 120px;
+    height: auto;
+    margin-bottom: 20px;
+    filter: brightness(0) invert(1);
+}
+
+.hero h1 {
+    font-size: 4.5rem;
+    margin: 0 0 15px 0;
+    font-weight: 700;
+    letter-spacing: -1px;
+}
+
+.tagline {
+    font-size: 1.8rem;
+    margin: 0 0 10px 0;
+    opacity: 0.95;
+    font-weight: 300;
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    margin: 0 0 40px 0;
+    opacity: 0.9;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 14px 32px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    display: inline-block;
+    border: 2px solid transparent;
+}
+
+.btn-primary {
+    background: white;
+    color: #667eea;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.btn-secondary {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border-color: white;
+}
+
+.btn-secondary:hover {
+    background: white;
+    color: #667eea;
+}
+
+.btn-outline {
+    background: transparent;
+    color: white;
+    border-color: rgba(255,255,255,0.5);
+}
+
+.btn-outline:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: white;
+}
+
+.btn-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 60px 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 25px;
+    margin-bottom: 80px;
+}
+
+.stat-card {
+    background: white;
+    padding: 35px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    text-align: center;
+    transition: all 0.3s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+.stat-number {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: #667eea;
+    margin-bottom: 10px;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.section {
+    margin-bottom: 80px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 35px;
+}
+
+.section h2 {
+    font-size: 2.5rem;
+    margin-bottom: 35px;
+    color: #333;
+    font-weight: 700;
+}
+
+.recommendations {
+    display: grid;
+    gap: 25px;
+}
+
+.recommendation-card {
+    background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+    padding: 30px;
+    border-radius: 12px;
+    display: flex;
+    gap: 25px;
+    border-left: 5px solid #667eea;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.recommendation-icon {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+}
+
+.recommendation-content h3 {
+    margin: 0 0 12px 0;
+    color: #333;
+    font-size: 1.3rem;
+}
+
+.recommendation-content p {
+    margin: 0 0 15px 0;
+    color: #666;
+    line-height: 1.6;
+}
+
+.policy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+}
+
+.policy-card {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.policy-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.15);
+}
+
+.policy-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 15px;
+}
+
+.policy-title {
+    margin: 0;
+    font-size: 1.3rem;
+    color: #667eea;
+    font-weight: 600;
+}
+
+.policy-version {
+    background: #e7e9fc;
+    color: #667eea;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.policy-description {
+    color: #666;
+    margin: 0 0 15px 0;
+    line-height: 1.6;
+}
+
+.policy-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #999;
+    margin-bottom: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.policy-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.tag {
+    background: #f0f3f7;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: 500;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 30px;
+}
+
+.feature-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    transition: all 0.3s;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+}
+
+.feature-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.feature-card h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.3rem;
+}
+
+.feature-card p {
+    color: #666;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.step-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.step-number {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.step-card h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 1.3rem;
+}
+
+.step-card pre {
+    background: #f5f7fa;
+    padding: 15px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 15px 0;
+    border: 1px solid #e0e3e7;
+}
+
+.step-card code {
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.95rem;
+    color: #667eea;
+    font-weight: 500;
+}
+
+.step-card p {
+    color: #666;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.info-box {
+    background: white;
+    padding: 35px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.info-box h3 {
+    margin: 0 0 25px 0;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.info-grid {
+    display: grid;
+    gap: 15px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: #666;
+    font-weight: 600;
+}
+
+.info-value {
+    color: #667eea;
+    font-weight: 600;
+}
+
+.info-value a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.info-value a:hover {
+    text-decoration: underline;
+}
+</style>
+{% endblock %}

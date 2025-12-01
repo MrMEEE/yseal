@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+.story-container {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 40px 20px;
+}
+
+.story-hero {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.story-hero img {
+    max-width: 300px;
+    height: auto;
+    margin-bottom: 20px;
+    animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+}
+
+.story-hero h1 {
+    font-size: 3rem;
+    color: #ffffff;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+}
+
+.story-hero .subtitle {
+    font-size: 1.3rem;
+    color: #ffffff;
+    font-style: italic;
+    text-shadow: 1px 1px 4px rgba(0,0,0,0.3);
+}
+
+.story-content {
+    background: white;
+    padding: 50px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    line-height: 1.9;
+    font-size: 1.1rem;
+}
+
+.story-content h2 {
+    color: #667eea;
+    font-size: 2rem;
+    margin: 40px 0 20px 0;
+    padding-bottom: 10px;
+    border-bottom: 3px solid #667eea;
+}
+
+.story-content h2:first-child {
+    margin-top: 0;
+}
+
+.story-content p {
+    margin-bottom: 20px;
+    color: #444;
+}
+
+.story-content .emphasis {
+    font-weight: bold;
+    color: #764ba2;
+}
+
+.story-content .quote {
+    font-style: italic;
+    padding-left: 30px;
+    border-left: 4px solid #667eea;
+    margin: 30px 0;
+    color: #555;
+}
+
+.villain {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.hero-action {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin: 30px 0;
+    text-align: center;
+    font-size: 1.2rem;
+}
+
+.cta-section {
+    text-align: center;
+    margin-top: 50px;
+    padding: 40px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e3e7f0 100%);
+    border-radius: 15px;
+}
+
+.cta-section h3 {
+    color: #667eea;
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.cta-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+
+.cta-btn {
+    padding: 15px 35px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.cta-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.cta-btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.cta-btn-secondary {
+    background: white;
+    color: #667eea;
+    border: 2px solid #667eea;
+}
+
+.cta-btn-secondary:hover {
+    background: #667eea;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .story-content {
+        padding: 30px 20px;
+    }
+    
+    .story-hero h1 {
+        font-size: 2rem;
+    }
+    
+    .story-content h2 {
+        font-size: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="story-container">
+    <div class="story-hero">
+        <img src="{% static 'yseal.png' %}" alt="Yoel the ySEal">
+        <h1>The Legend of Yoel the ySEal</h1>
+        <p class="subtitle">The Guardian of Security-Enhanced Systems</p>
+    </div>
+
+    <div class="story-content">
+        <h2>🌊 Once Upon a Time in the Digital Ocean</h2>
+        <p>
+            In the vast digital ocean, where servers swam freely and data flowed like currents, there lived a young seal named <span class="emphasis">Yoel</span>. 
+            Unlike other seals who spent their days playing in the waves, Yoel had a special gift – he could see the invisible shields that protected the digital world.
+        </p>
+        
+        <p>
+            These shields were called <span class="emphasis">SELinux policies</span>, and they were the guardians of security, keeping malicious intruders away from precious data. 
+            But Yoel noticed something troubling...
+        </p>
+
+        <h2>⚠️ The Great Permissive Plague</h2>
+        <p>
+            One day, while swimming through the server farms, Yoel discovered a horrifying trend. Everywhere he looked, administrators were typing the dreaded command:
+        </p>
+        
+        <div class="quote">
+            "setenforce 0"<br>
+            "SELINUX=permissive"
+        </div>
+        
+        <p>
+            The protective shields were being turned off! Yoel watched in dismay as one server after another dropped their defenses, leaving themselves vulnerable to attack. 
+            When he asked why, the administrators would shrug and say:
+        </p>
+        
+        <div class="quote">
+            "It's too hard to configure..."<br>
+            "We don't have time to write policies..."<br>
+            "It keeps blocking our applications..."
+        </div>
+
+        <h2>😈 Enter the 0days</h2>
+        <p>
+            In the darkest corners of the digital ocean lurked the <span class="villain">Evil 0days</span> – malicious exploits that fed on unprotected systems. 
+            They had been waiting for this moment. With SELinux disabled across the digital ocean, the 0days began their feast, compromising system after system.
+        </p>
+        
+        <p>
+            Data was stolen. Services were hijacked. Chaos reigned supreme. And the 0days grew stronger with each conquest.
+        </p>
+
+        <div class="hero-action">
+            💪 "NOT ON MY WATCH!" barked Yoel
+        </div>
+
+        <h2>🛡️ The Birth of ySEal</h2>
+        <p>
+            Yoel realized that sysadmins weren't lazy or careless – they simply didn't have the tools they needed! Writing SELinux policies from scratch was difficult and time-consuming. 
+            There was no easy way to share and discover policies that others had already created.
+        </p>
+        
+        <p>
+            That's when inspiration struck like lightning ⚡
+        </p>
+        
+        <p>
+            <span class="emphasis">"If Ansible has Galaxy for sharing playbooks,"</span> Yoel thought, 
+            <span class="emphasis">"why can't we have something similar for SELinux policies?"</span>
+        </p>
+        
+        <p>
+            And thus, <span class="emphasis">ySEal</span> was born! <strong>Y</strong>our <strong>S</strong>ecurity <strong>E</strong>nhanced <strong>A</strong>rchitecture <strong>L</strong>ibrary – 
+            a place where system administrators could:
+        </p>
+        
+        <ul style="margin-left: 40px; color: #444;">
+            <li style="margin-bottom: 10px;">📚 Discover pre-built SELinux policies for common applications</li>
+            <li style="margin-bottom: 10px;">🤝 Share their own policies with the community</li>
+            <li style="margin-bottom: 10px;">⭐ Rate and review policies based on effectiveness</li>
+            <li style="margin-bottom: 10px;">🚀 Install policies with a single command</li>
+            <li style="margin-bottom: 10px;">🔄 Track versions and updates effortlessly</li>
+        </ul>
+
+        <h2>🎉 The Victory</h2>
+        <p>
+            With ySEal swimming through the digital ocean, administrators started enabling SELinux again! They could find policies for Docker, for Nginx, for PostgreSQL, 
+            and for hundreds of other applications – all tested and verified by the community.
+        </p>
+        
+        <p>
+            The protective shields went back up, one server at a time. The Evil 0days, finding fewer and fewer vulnerable systems, retreated back to their dark corners, 
+            defeated and hungry.
+        </p>
+        
+        <p>
+            And Yoel? He became known across the digital ocean as <span class="emphasis">Yoel the ySEal</span>, the Guardian of Security-Enhanced Systems. 
+            He continues to patrol the servers to this day, ensuring that no system goes unprotected.
+        </p>
+
+        <div class="cta-section">
+            <h3>Join Yoel's Mission!</h3>
+            <p style="font-size: 1.2rem; color: #555;">Help keep the digital ocean safe. Don't let the 0days win!</p>
+            <div class="cta-buttons">
+                <a href="/browse/" class="cta-btn cta-btn-primary">Browse Policies</a>
+                <a href="/contributors/" class="cta-btn cta-btn-secondary">View Contributors</a>
+            </div>
+            <p style="margin-top: 30px; color: #666; font-style: italic;">
+                Remember: <strong>setenforce 1</strong> – Keep your shields up! 🛡️
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
