@@ -1,0 +1,12 @@
+# S2I Environment Variables
+APP_MODULE=yseal.wsgi
+APP_CONFIG=/opt/app-root/src/gunicorn.conf.py
+APP_FILE=yseal/wsgi.py
+
+# Python settings
+DISABLE_COLLECTSTATIC=1
+ENABLE_PIPENV=false
+UPGRADE_PIP_TO_LATEST=true
+
+# Django settings
+DJANGO_SETTINGS_MODULE=yseal.settings

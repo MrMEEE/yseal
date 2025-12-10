@@ -1,0 +1,30 @@
+#!/bin/bash
+
+cat <<EOF
+This is a Source-to-Image (S2I) builder for ySEal Django application.
+
+To build and run this application:
+
+1. Build the image:
+   s2i build . registry.access.redhat.com/ubi8/python-39 yseal-app
+
+2. Run the image:
+   docker run -p 8080:8080 yseal-app
+
+Environment variables:
+
+- DJANGO_SECRET_KEY: Django secret key (required)
+- DEBUG: Set to False for production (default: False)
+- USE_POSTGRES: Use PostgreSQL instead of SQLite (default: True)
+- DB_NAME: Database name (default: yseal)
+- DB_USER: Database user (default: yseal)
+- DB_PASSWORD: Database password (required)
+- DB_HOST: Database host (default: localhost)
+- DB_PORT: Database port (default: 5432)
+- ALLOWED_HOSTS: Comma-separated list of allowed hosts (default: *)
+- CELERY_BROKER_URL: Celery broker URL (default: redis://localhost:6379/0)
+- REDIS_URL: Redis cache URL (default: redis://localhost:6379/1)
+
+For more information, see the documentation at:
+https://github.com/MrMEEE/yseal
+EOF

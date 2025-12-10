@@ -1,0 +1,2 @@
+# This marker file indicates that this is an OpenShift-compatible application
+# It uses Python S2I (Source-to-Image) for building and deployment

@@ -1,0 +1,603 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: yseal-django-app
+  annotations:
+    description: "ySEal - Your Security Enhanced Architecture Library"
+    tags: "django,python,selinux,postgresql,redis"
+    iconClass: "icon-python"
+    openshift.io/display-name: "ySEal Django Application"
+    openshift.io/documentation-url: "https://github.com/MrMEEE/yseal"
+    openshift.io/support-url: "https://github.com/MrMEEE/yseal/issues"
+
+parameters:
+  - name: APP_NAME
+    displayName: Application Name
+    description: The name of the application
+    value: yseal
+    required: true
+  
+  - name: GIT_REPOSITORY
+    displayName: Git Repository URL
+    description: The URL of the repository with your application source code
+    value: https://github.com/MrMEEE/yseal.git
+    required: true
+  
+  - name: GIT_BRANCH
+    displayName: Git Branch
+    description: Set this to a branch name, tag or other ref of your repository
+    value: main
+    required: true
+  
+  - name: PYTHON_VERSION
+    displayName: Python Version
+    description: Python version to use
+    value: "3.12-ubi9"
+    required: true
+  
+  - name: DJANGO_SECRET_KEY
+    displayName: Django Secret Key
+    description: Django secret key for production
+    generate: expression
+    from: "[a-zA-Z0-9]{50}"
+    required: true
+  
+  - name: DATABASE_NAME
+    displayName: Database Name
+    value: yseal
+    required: true
+  
+  - name: DATABASE_USER
+    displayName: Database User
+    value: yseal
+    required: true
+  
+  - name: DATABASE_PASSWORD
+    displayName: Database Password
+    description: Password for the PostgreSQL connection
+    generate: expression
+    from: "[a-zA-Z0-9]{16}"
+    required: true
+  
+  - name: REDIS_PASSWORD
+    displayName: Redis Password
+    description: Password for the Redis connection
+    generate: expression
+    from: "[a-zA-Z0-9]{16}"
+    required: true
+  
+  - name: MEMORY_LIMIT
+    displayName: Memory Limit
+    description: Maximum amount of memory the container can use
+    value: "512Mi"
+    required: true
+  
+  - name: CPU_LIMIT
+    displayName: CPU Limit
+    description: Maximum amount of CPU the container can use
+    value: "1"
+    required: true
+  
+  - name: STORAGE_CLASS
+    displayName: Storage Class
+    description: Storage class for persistent volumes (leave empty for default)
+    value: ""
+    required: false
+
+objects:
+  # PostgreSQL Database
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ${APP_NAME}-postgresql
+      labels:
+        app: ${APP_NAME}
+    stringData:
+      database-name: ${DATABASE_NAME}
+      database-user: ${DATABASE_USER}
+      database-password: ${DATABASE_PASSWORD}
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: ${APP_NAME}-postgresql
+      labels:
+        app: ${APP_NAME}
+    spec:
+      ports:
+        - name: postgresql
+          port: 5432
+          targetPort: 5432
+      selector:
+        name: ${APP_NAME}-postgresql
+
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: ${APP_NAME}-postgresql
+      labels:
+        app: ${APP_NAME}
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: ${STORAGE_CLASS}
+      resources:
+        requests:
+          storage: 5Gi
+
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ${APP_NAME}-postgresql
+      labels:
+        app: ${APP_NAME}
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          name: ${APP_NAME}-postgresql
+      strategy:
+        type: Recreate
+      template:
+        metadata:
+          labels:
+            name: ${APP_NAME}-postgresql
+            app: ${APP_NAME}
+        spec:
+          containers:
+            - name: postgresql
+              image: registry.redhat.io/rhel8/postgresql-13:latest
+              ports:
+                - containerPort: 5432
+              env:
+                - name: POSTGRESQL_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-user
+                - name: POSTGRESQL_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-password
+                - name: POSTGRESQL_DATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-name
+              volumeMounts:
+                - name: ${APP_NAME}-postgresql-data
+                  mountPath: /var/lib/pgsql/data
+              livenessProbe:
+                tcpSocket:
+                  port: 5432
+                initialDelaySeconds: 30
+                timeoutSeconds: 1
+              readinessProbe:
+                exec:
+                  command:
+                    - /bin/sh
+                    - -i
+                    - -c
+                    - psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c 'SELECT 1'
+                initialDelaySeconds: 5
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  memory: 512Mi
+          volumes:
+            - name: ${APP_NAME}-postgresql-data
+              persistentVolumeClaim:
+                claimName: ${APP_NAME}-postgresql
+
+  # Redis
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ${APP_NAME}-redis
+      labels:
+        app: ${APP_NAME}
+    stringData:
+      redis-password: ${REDIS_PASSWORD}
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: ${APP_NAME}-redis
+      labels:
+        app: ${APP_NAME}
+    spec:
+      ports:
+        - name: redis
+          port: 6379
+          targetPort: 6379
+      selector:
+        name: ${APP_NAME}-redis
+
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ${APP_NAME}-redis
+      labels:
+        app: ${APP_NAME}
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          name: ${APP_NAME}-redis
+      template:
+        metadata:
+          labels:
+            name: ${APP_NAME}-redis
+            app: ${APP_NAME}
+        spec:
+          containers:
+            - name: redis
+              image: registry.redhat.io/rhel8/redis-6:latest
+              ports:
+                - containerPort: 6379
+              env:
+                - name: REDIS_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-redis
+                      key: redis-password
+              livenessProbe:
+                tcpSocket:
+                  port: 6379
+                initialDelaySeconds: 30
+                timeoutSeconds: 1
+              readinessProbe:
+                exec:
+                  command:
+                    - /bin/sh
+                    - -c
+                    - redis-cli ping
+                initialDelaySeconds: 5
+                timeoutSeconds: 1
+              resources:
+                limits:
+                  memory: 256Mi
+
+  # Django Application
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ${APP_NAME}
+      labels:
+        app: ${APP_NAME}
+    stringData:
+      django-secret-key: ${DJANGO_SECRET_KEY}
+
+  - apiVersion: v1
+    kind: ImageStream
+    metadata:
+      name: ${APP_NAME}
+      labels:
+        app: ${APP_NAME}
+    spec:
+      lookupPolicy:
+        local: false
+
+  - apiVersion: v1
+    kind: BuildConfig
+    metadata:
+      name: ${APP_NAME}
+      labels:
+        app: ${APP_NAME}
+    spec:
+      output:
+        to:
+          kind: ImageStreamTag
+          name: ${APP_NAME}:latest
+      source:
+        git:
+          uri: ${GIT_REPOSITORY}
+          ref: ${GIT_BRANCH}
+        type: Git
+      strategy:
+        type: Source
+        sourceStrategy:
+          from:
+            kind: ImageStreamTag
+            namespace: openshift
+            name: python:${PYTHON_VERSION}
+          env:
+            - name: UPGRADE_PIP_TO_LATEST
+              value: "true"
+            - name: ENABLE_PIPENV
+              value: "false"
+      triggers:
+        - type: ConfigChange
+        - type: ImageChange
+        - github:
+            secret: ${GITHUB_WEBHOOK_SECRET}
+          type: GitHub
+
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: ${APP_NAME}
+      labels:
+        app: ${APP_NAME}
+    spec:
+      ports:
+        - name: web
+          port: 8080
+          targetPort: 8080
+      selector:
+        name: ${APP_NAME}
+
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: ${APP_NAME}-media
+      labels:
+        app: ${APP_NAME}
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: ${STORAGE_CLASS}
+      resources:
+        requests:
+          storage: 10Gi
+
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ${APP_NAME}
+      labels:
+        app: ${APP_NAME}
+    spec:
+      replicas: 2
+      selector:
+        matchLabels:
+          name: ${APP_NAME}
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: 1
+          maxUnavailable: 0
+      template:
+        metadata:
+          labels:
+            name: ${APP_NAME}
+            app: ${APP_NAME}
+        spec:
+          containers:
+            - name: yseal
+              image: ${APP_NAME}:latest
+              ports:
+                - containerPort: 8080
+              env:
+                - name: DJANGO_SETTINGS_MODULE
+                  value: yseal.settings
+                - name: DJANGO_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}
+                      key: django-secret-key
+                - name: DEBUG
+                  value: "False"
+                - name: USE_POSTGRES
+                  value: "True"
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-name
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-user
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-password
+                - name: DB_HOST
+                  value: ${APP_NAME}-postgresql
+                - name: DB_PORT
+                  value: "5432"
+                - name: REDIS_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-redis
+                      key: redis-password
+                - name: CELERY_BROKER_URL
+                  value: redis://:$(REDIS_PASSWORD)@${APP_NAME}-redis:6379/0
+                - name: CELERY_RESULT_BACKEND
+                  value: redis://:$(REDIS_PASSWORD)@${APP_NAME}-redis:6379/0
+                - name: REDIS_URL
+                  value: redis://:$(REDIS_PASSWORD)@${APP_NAME}-redis:6379/1
+                - name: ALLOWED_HOSTS
+                  value: "*"
+                - name: PORT
+                  value: "8080"
+              volumeMounts:
+                - name: ${APP_NAME}-media
+                  mountPath: /opt/app-root/src/media
+              livenessProbe:
+                httpGet:
+                  path: /
+                  port: 8080
+                initialDelaySeconds: 30
+                timeoutSeconds: 3
+                periodSeconds: 10
+                failureThreshold: 3
+              readinessProbe:
+                httpGet:
+                  path: /
+                  port: 8080
+                initialDelaySeconds: 15
+                timeoutSeconds: 3
+                periodSeconds: 10
+                failureThreshold: 3
+              resources:
+                limits:
+                  memory: ${MEMORY_LIMIT}
+                  cpu: ${CPU_LIMIT}
+                requests:
+                  memory: 256Mi
+                  cpu: 200m
+          volumes:
+            - name: ${APP_NAME}-media
+              persistentVolumeClaim:
+                claimName: ${APP_NAME}-media
+
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: ${APP_NAME}
+      labels:
+        app: ${APP_NAME}
+    spec:
+      to:
+        kind: Service
+        name: ${APP_NAME}
+      port:
+        targetPort: web
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect
+
+  # Celery Worker
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ${APP_NAME}-celery-worker
+      labels:
+        app: ${APP_NAME}
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          name: ${APP_NAME}-celery-worker
+      template:
+        metadata:
+          labels:
+            name: ${APP_NAME}-celery-worker
+            app: ${APP_NAME}
+        spec:
+          containers:
+            - name: celery-worker
+              image: ${APP_NAME}:latest
+              command:
+                - celery
+                - -A
+                - yseal
+                - worker
+                - --loglevel=info
+              env:
+                - name: DJANGO_SETTINGS_MODULE
+                  value: yseal.settings
+                - name: DJANGO_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}
+                      key: django-secret-key
+                - name: USE_POSTGRES
+                  value: "True"
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-name
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-user
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-password
+                - name: DB_HOST
+                  value: ${APP_NAME}-postgresql
+                - name: DB_PORT
+                  value: "5432"
+                - name: REDIS_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-redis
+                      key: redis-password
+                - name: CELERY_BROKER_URL
+                  value: redis://:$(REDIS_PASSWORD)@${APP_NAME}-redis:6379/0
+                - name: CELERY_RESULT_BACKEND
+                  value: redis://:$(REDIS_PASSWORD)@${APP_NAME}-redis:6379/0
+              resources:
+                limits:
+                  memory: 512Mi
+                  cpu: 500m
+
+  # Celery Beat (Scheduler)
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ${APP_NAME}-celery-beat
+      labels:
+        app: ${APP_NAME}
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          name: ${APP_NAME}-celery-beat
+      template:
+        metadata:
+          labels:
+            name: ${APP_NAME}-celery-beat
+            app: ${APP_NAME}
+        spec:
+          containers:
+            - name: celery-beat
+              image: ${APP_NAME}:latest
+              command:
+                - celery
+                - -A
+                - yseal
+                - beat
+                - --loglevel=info
+              env:
+                - name: DJANGO_SETTINGS_MODULE
+                  value: yseal.settings
+                - name: DJANGO_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}
+                      key: django-secret-key
+                - name: USE_POSTGRES
+                  value: "True"
+                - name: DB_NAME
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-name
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-user
+                - name: DB_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-postgresql
+                      key: database-password
+                - name: DB_HOST
+                  value: ${APP_NAME}-postgresql
+                - name: DB_PORT
+                  value: "5432"
+                - name: REDIS_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: ${APP_NAME}-redis
+                      key: redis-password
+                - name: CELERY_BROKER_URL
+                  value: redis://:$(REDIS_PASSWORD)@${APP_NAME}-redis:6379/0
+                - name: CELERY_RESULT_BACKEND
+                  value: redis://:$(REDIS_PASSWORD)@${APP_NAME}-redis:6379/0
+              resources:
+                limits:
+                  memory: 256Mi
+                  cpu: 200m

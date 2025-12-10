@@ -1,0 +1,147 @@
+╔════════════════════════════════════════════════════════════════════════╗
+║              ySEal OpenShift S2I - Quick Reference Card                ║
+╚════════════════════════════════════════════════════════════════════════╝
+
+📦 QUICK DEPLOY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ./openshift/deploy.sh                    # Automated deployment
+  oc apply -f openshift/deployment.yaml    # Direct deployment
+  oc process -f openshift/template.yaml | oc apply -f -  # Template
+
+🏗️  BUILD & DEPLOY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  oc new-project yseal                     # Create project
+  oc start-build yseal                     # Start build
+  oc logs -f bc/yseal                      # Watch build logs
+  oc get builds                            # List builds
+
+📊 MONITORING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  oc get pods                              # List all pods
+  oc get all                               # List all resources
+  oc logs -f deployment/yseal              # App logs
+  oc logs -f deployment/yseal-celery-worker  # Worker logs
+  oc describe pod <pod-name>               # Pod details
+  watch oc get pods                        # Live pod status
+
+🔍 DEBUGGING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  POD=$(oc get pods -l app=yseal -o jsonpath='{.items[0].metadata.name}')
+  oc rsh $POD                              # Shell into pod
+  oc rsh $POD python manage.py shell      # Django shell
+  oc rsh $POD env                          # View environment
+  oc get events --sort-by='.lastTimestamp' # Recent events
+
+👤 USER MANAGEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  POD=$(oc get pods -l app=yseal -o jsonpath='{.items[0].metadata.name}')
+  oc rsh $POD python manage.py createsuperuser
+  oc rsh $POD python manage.py make_admin <user> <email>
+
+🗄️  DATABASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  oc rsh $POD python manage.py migrate    # Run migrations
+  oc rsh $POD python manage.py dbshell    # Database shell
+  
+  # Backup
+  DBPOD=$(oc get pods -l app=yseal-postgresql -o jsonpath='{.items[0].metadata.name}')
+  oc exec $DBPOD -- pg_dump -U yseal yseal > backup.sql
+  
+  # Restore
+  cat backup.sql | oc exec -i $DBPOD -- psql -U yseal yseal
+
+🔄 SCALING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  oc scale deployment/yseal --replicas=3       # Scale app
+  oc scale deployment/yseal-celery-worker --replicas=2  # Scale workers
+  oc autoscale deployment/yseal --min=2 --max=10 --cpu-percent=80
+
+🔧 CONFIGURATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  oc set env deployment/yseal KEY=value    # Set env var
+  oc set env deployment/yseal --list       # List env vars
+  oc set resources deployment/yseal --limits=memory=1Gi,cpu=1
+  
+  # Update secrets
+  oc set data secret/yseal --from-literal=django-secret-key=<new-key>
+
+🌐 NETWORKING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  oc get route yseal                       # Get URL
+  oc get route yseal -o jsonpath='{.spec.host}'  # Just hostname
+  oc port-forward deployment/yseal 8080:8080     # Local access
+
+🔄 UPDATES & ROLLBACK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  oc start-build yseal --follow            # Build & watch
+  oc rollout restart deployment/yseal      # Restart deployment
+  oc rollout status deployment/yseal       # Watch rollout
+  oc rollout history deployment/yseal      # View history
+  oc rollout undo deployment/yseal         # Rollback
+
+🧹 CLEANUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  oc delete all -l app=yseal               # Delete all resources
+  oc delete pvc -l app=yseal               # Delete storage
+  oc delete project yseal                  # Delete entire project
+
+📁 FILE STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  .s2i/
+    ├── bin/
+    │   ├── assemble      # Build script
+    │   ├── run          # Startup script
+    │   └── usage        # Usage info
+    └── environment      # Build env vars
+  
+  openshift/
+    ├── template.yaml    # Full template (recommended)
+    ├── deployment.yaml  # Simple deployment
+    ├── deploy.sh        # Automated script
+    ├── README.md        # Full documentation
+    ├── DEVELOPMENT.md   # Local dev guide
+    └── OVERVIEW.md      # Architecture overview
+  
+  gunicorn.conf.py       # Gunicorn config
+  requirements-openshift.txt  # Production deps
+
+🔐 SECURITY CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ☐ Change default passwords
+  ☐ Update ALLOWED_HOSTS for your domain
+  ☐ Set DEBUG=False in production
+  ☐ Configure proper resource limits
+  ☐ Set up backups
+  ☐ Configure monitoring
+  ☐ Review network policies
+  ☐ Test disaster recovery
+
+📚 DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  openshift/README.md      # Complete deployment guide
+  openshift/DEVELOPMENT.md # Local development with CRC
+  openshift/OVERVIEW.md    # Architecture & features
+
+🆘 TROUBLESHOOTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Pod crashes:
+    → oc logs <pod-name>
+    → oc describe pod <pod-name>
+    → oc get events
+  
+  Build fails:
+    → oc logs -f bc/yseal
+    → Check .s2i/bin/assemble script
+  
+  Database issues:
+    → Check PostgreSQL pod: oc get pods -l app=yseal-postgresql
+    → Test connection: oc rsh $POD python manage.py dbshell
+  
+  Can't access app:
+    → oc get route yseal
+    → Check pod status: oc get pods
+    → Check logs: oc logs -f deployment/yseal
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Need help? Check: https://docs.openshift.com/ or openshift/README.md
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
