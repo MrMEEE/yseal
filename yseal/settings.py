@@ -207,6 +207,21 @@ if not DEBUG:
     X_FRAME_OPTIONS = 'DENY'
 
 # Logging
+LOGGING_HANDLERS = {
+    'console': {
+        'class': 'logging.StreamHandler',
+        'formatter': 'verbose',
+    },
+}
+
+# Only add file handler in DEBUG mode (development)
+if DEBUG:
+    LOGGING_HANDLERS['file'] = {
+        'class': 'logging.FileHandler',
+        'filename': BASE_DIR / 'logs' / 'yseal.log',
+        'formatter': 'verbose',
+    }
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -216,29 +231,19 @@ LOGGING = {
             'style': '{',
         },
     },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'yseal.log',
-            'formatter': 'verbose',
-        },
-    },
+    'handlers': LOGGING_HANDLERS,
     'root': {
         'handlers': ['console'],
         'level': 'INFO',
     },
     'loggers': {
         'django': {
-            'handlers': ['console', 'file'] if not DEBUG else ['console'],
+            'handlers': ['console', 'file'] if DEBUG else ['console'],
             'level': 'INFO',
             'propagate': False,
         },
         'apps': {
-            'handlers': ['console', 'file'] if not DEBUG else ['console'],
+            'handlers': ['console', 'file'] if DEBUG else ['console'],
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False,
         },
