@@ -9,9 +9,12 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
     SpectacularRedocView,
 )
-from apps.core.views import home, browse, contributors, yoel_story
+from apps.core.views import home, browse, contributors, yoel_story, health
 
 urlpatterns = [
+    # Health check endpoint for OpenShift
+    path('health', health, name='health'),
+    
     # Home page
     path('', home, name='home'),
     path('browse/', browse, name='browse'),

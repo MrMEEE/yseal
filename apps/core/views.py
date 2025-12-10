@@ -3,11 +3,23 @@ Core views for ySEal (Your Security Enhanced Architecture Library).
 """
 import django
 from django.shortcuts import render
+from django.http import JsonResponse
 from django.db import connection
 from random import sample
 from apps.policies.models import Policy, DownloadLog
 from apps.contributors.models import Contributor
 from apps.accounts.models import User
+
+
+def health(request):
+    """
+    Health check endpoint for OpenShift readiness probe.
+    Returns 200 OK with basic status information.
+    """
+    return JsonResponse({
+        'status': 'ok',
+        'service': 'yseal',
+    })
 
 
 def home(request):
