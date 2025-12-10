@@ -199,6 +199,8 @@ CACHES = {
 
 # Security Settings for Production
 if not DEBUG:
+    # Trust X-Forwarded-Proto header from OpenShift router
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SECURE_REDIRECT_EXEMPT = [r'^health$']  # Exempt health check from SSL redirect
     SESSION_COOKIE_SECURE = True
